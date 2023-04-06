@@ -1,8 +1,8 @@
 import { HttpException } from "./HttpException";
 import { StatusCode, ReasonPhrases } from "@/utils/httpStatusCode";
 
-export class ApiKeyInvalidException extends HttpException{
+export class ConfilctRequestErrorException extends HttpException{
     constructor() {
-        super(StatusCode.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+        super(StatusCode.CONFLICT, ReasonPhrases.CONFLICT);
     }
 }

@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Document, LeanDocument, Types } from "mongoose";
 
 export interface Shop {
     _id: string;
@@ -9,3 +9,5 @@ export interface Shop {
     verify: boolean,
     roles: Types.Array<string>
 }
+
+export interface LeanShopDocument extends LeanDocument<Shop & Document>{}

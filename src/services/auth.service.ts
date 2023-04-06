@@ -1,64 +1,138 @@
 import { hash, compare } from 'bcrypt';
-import { sign } from 'jsonwebtoken';
-import { SECRET_KEY } from '@config';
-import { CreateUserDto } from '@dtos/users.dto';
-import { HttpException } from '@exceptions/HttpException';
-import { DataStoredInToken, TokenData } from '@interfaces/auth.interface';
-import { User } from '@interfaces/users.interface';
-import userModel from '@models/users.model';
-import { isEmpty } from '@utils/util';
+import { createTokenPair, generateKeyPair, getInfoData } from '@utils/util';
+import { CreateShopDto, LoginShopDto, ReturnShopDto } from '@/dtos/shop.dto';
+import { LeanShopDocument } from '@/interfaces/shop.interface';
+import { BadRequestErrorException } from '@/exceptions/BadRequestError.exception';
+import { Role } from '@/common/enum/role';
+import KeyTokenService from './keyToken.service';
+import ShopService from './shop.service';
+import { AuthFailureErrorException } from '@/exceptions/AuthFailureError.exception';
+import { LeanKeyTokenDocument } from '@/interfaces/keyToken.interface';
+import { JwtPayload } from '@/common/type/JwtPayload';
+import { ForBiddenException } from '@/exceptions/ForbiddenError.exception';
+import ShopRepo from '@/repositories/shop.repo';
 
 class AuthService {
-  public users = userModel;
+  private shopService = new ShopService();
+  private keyTokenService = new KeyTokenService();
 
-  
+  public async signUp({ email, name, password }: CreateShopDto): Promise<ReturnShopDto> {
+    const holderShop: LeanShopDocument = await this.shopService.findShopByEmail({ email });
 
-  public async signup(userData: CreateUserDto): Promise<User> {
-    if (isEmpty(userData)) throw new HttpException(400, "userData is empty");
+    if (holderShop) {
+      throw new BadRequestErrorException({ message: "Shop already register" })
+    }
 
-    const findUser: User = await this.users.findOne({ email: userData.email });
-    if (findUser) throw new HttpException(409, `This email ${userData.email} already exists`);
+    const passwordHash = await hash(password, 10);
 
-    const hashedPassword = await hash(userData.password, 10);
-    const createUserData: User = await this.users.create({ ...userData, password: hashedPassword });
+    const newShop: LeanShopDocument = await this.shopService.createShop({ name, email, password: passwordHash, roles: [Role.SHOP] });
 
-    return createUserData;
+    const { privateKey, publicKey } = generateKeyPair();
+    const tokens = createTokenPair(
+      { id: newShop._id, email },
+      publicKey,
+      privateKey
+    );
+    
+    const keyStore = await this.keyTokenService.createKeyToken({
+      shopId: newShop._id,
+      publicKey,
+      privateKey, 
+      refreshToken: tokens.refreshToken
+    });
+
+    if(!keyStore) {
+      throw new BadRequestErrorException({message: "Error: Keystore error"});
+    }
+
+    return {
+      shop: getInfoData({
+        fields: ["_id", "name", "email"],
+        object: newShop
+      }) as { _id: string, name: string, email: string } ,
+      tokens
+    }
   }
 
-  public async login(userData: CreateUserDto): Promise<{ cookie: string; findUser: User }> {
-    if (isEmpty(userData)) throw new HttpException(400, "userData is empty");
+  public async login({ email, password }: LoginShopDto): Promise<ReturnShopDto> {
+    const foundShop: LeanShopDocument = await this.shopService.findShopByEmail({ email });
+    if(!foundShop) {
+      throw new BadRequestErrorException({ message: "Shop not registered" });
+    }
 
-    const findUser: User = await this.users.findOne({ email: userData.email });
-    if (!findUser) throw new HttpException(409, `This email ${userData.email} was not found`);
+    const match: boolean = await compare(password, foundShop.password);
+    if(!match) {
+      throw new AuthFailureErrorException({ message: "Authentication error" });
+    }
 
-    const isPasswordMatching: boolean = await compare(userData.password, findUser.password);
-    if (!isPasswordMatching) throw new HttpException(409, "Password is not matching");
+    const { privateKey, publicKey } = generateKeyPair();
+    const tokens = createTokenPair(
+      { id: foundShop._id, email },
+      publicKey, 
+      privateKey
+    );
 
-    const tokenData = this.createToken(findUser);
-    const cookie = this.createCookie(tokenData);
+    const keyStore = await this.keyTokenService.createKeyToken({
+      shopId: foundShop._id,
+      privateKey,
+      publicKey,
+      refreshToken: tokens.refreshToken
+    });
 
-    return { cookie, findUser };
+    if(!keyStore) {
+      throw new BadRequestErrorException({message: "Error: Keystore error"});
+    }
+
+    return {
+      shop: getInfoData({
+        fields: ["_id", "email", "name"],
+        object: foundShop
+      }) as { _id: string, name: string, email: string },
+      tokens
+    }
   }
 
-  public async logout(userData: User): Promise<User> {
-    if (isEmpty(userData)) throw new HttpException(400, "userData is empty");
-
-    const findUser: User = await this.users.findOne({ email: userData.email, password: userData.password });
-    if (!findUser) throw new HttpException(409, `This email ${userData.email} was not found`);
-
-    return findUser;
+  public async logout(keyStore: LeanKeyTokenDocument): Promise<LeanKeyTokenDocument> {
+    const delKey: LeanKeyTokenDocument = await this.keyTokenService.removeKeyTokenById(keyStore._id);
+    return delKey;
   }
 
-  public createToken(user: User): TokenData {
-    const dataStoredInToken: DataStoredInToken = { _id: user._id };
-    const secretKey: string = SECRET_KEY;
-    const expiresIn: number = 60 * 60;
+  public async handleRefreshToken({ refreshToken, shop, keyStore }: {refreshToken: string, shop: JwtPayload, keyStore: LeanKeyTokenDocument}) {
+    const { email, id } = shop;
 
-    return { expiresIn, token: sign(dataStoredInToken, secretKey, { expiresIn }) };
-  }
+    /**
+     * If refresh token is in the list of refreshToken used, server can hanlde this to protect the system
+     * In this case we delete all key
+     */
+    if(keyStore.refreshTokensUsed.includes(refreshToken)) {
+      await this.keyTokenService.deleteKeyByShopId(id);
+      throw new ForBiddenException({message: "Sommthing wrong happened, please relogin!!!"});
+    }
 
-  public createCookie(tokenData: TokenData): string {
-    return `Authorization=${tokenData.token}; HttpOnly; Max-Age=${tokenData.expiresIn};`;
+    if(keyStore.refreshToken !== refreshToken){
+      throw new AuthFailureErrorException({message: "Shop not register"});
+    }
+
+    const foundShop: LeanShopDocument = await ShopRepo.findShopById({_id: id});
+
+    if(!foundShop) {
+      throw new AuthFailureErrorException({message: "Shop not register"});
+    }
+
+    // Create new keytoken pair
+    const tokens = createTokenPair(
+      { id, email },
+      keyStore.publicKey,
+      keyStore.privateKey
+    );
+
+    // Update token
+    await this.keyTokenService.updateKeyTokenWithRefreshTokenUsed(tokens.accessToken, tokens.refreshToken, keyStore._id, refreshToken);
+
+    return {
+      shop, 
+      tokens
+    }
   }
 }
 

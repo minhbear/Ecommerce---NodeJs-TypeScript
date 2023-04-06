@@ -1,3 +1,10 @@
+import crypto from "crypto";
+import lodash from "lodash";
+import { verify, sign } from "jsonwebtoken";
+import { AuthFailureErrorException } from "@exceptions/AuthFailureError.exception";
+import { LeanKeyTokenDocument } from "@/interfaces/keyToken.interface";
+import { JwtPayload } from "@/common/type/JwtPayload";
+
 /**
  * @method isEmpty
  * @param {String | Number | Object} value
@@ -17,3 +24,57 @@ export const isEmpty = (value: string | number | object): boolean => {
     return false;
   }
 };
+
+export const generateKeyPair = () => {
+  const privateKey = crypto.randomBytes(64).toString("hex");
+  const publicKey = crypto.randomBytes(64).toString("hex");
+
+  return {
+    privateKey,
+    publicKey,
+  };
+};
+
+export const extractRefreshToken = (refreshToken: string, keyStore: LeanKeyTokenDocument, shopId: string) => {
+  const decodedShop: JwtPayload = verify(refreshToken, keyStore.privateKey) as JwtPayload;
+  if (shopId !== decodedShop.id) {
+    throw new AuthFailureErrorException({ message: "Invalid user" });
+  }
+
+  return {
+    decodedShop,
+  };
+};
+
+export const extractAccessToken = (accessToken: string, keyStore: LeanKeyTokenDocument, shopId: string) => {
+  const decodedShop: JwtPayload = verify(accessToken, keyStore.publicKey) as JwtPayload;
+  if (shopId !== decodedShop.id) {
+    throw new AuthFailureErrorException({ message: "Invalid user" });
+  }
+
+  return {
+    decodedShop
+  };
+};
+
+export const createTokenPair = (payload: JwtPayload, publicKey: string, privateKey: string) => {
+  try {
+    const accessToken = sign(payload, publicKey, {
+      expiresIn: "2 days"
+    });
+
+    const refreshToken = sign(payload, privateKey, {
+      expiresIn: '7 days'
+    });
+
+    return {
+      accessToken, refreshToken
+    }
+  } catch (error) {
+
+  }
+}
+
+export const getInfoData = ({ fields = [], object = {} }) => {
+  return lodash.pick(object, fields);
+}

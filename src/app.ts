@@ -16,7 +16,7 @@ import { logger, stream } from '@utils/logger';
 import { StatusCode } from '@utils/httpStatusCode';
 import { apiKey, permission } from './auth/checkAuth';
 import { HttpException } from './exceptions/HttpException';
-import {PermissionType} from "@constants/permission";
+import {PermissionType} from "@/common/enum/permission";
 
 class App {
   public app: express.Application;

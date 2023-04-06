@@ -1,46 +1,63 @@
 import { NextFunction, Request, Response } from 'express';
-import { CreateUserDto } from '@dtos/users.dto';
-import { RequestWithUser } from '@interfaces/auth.interface';
-import { User } from '@interfaces/users.interface';
 import AuthService from '@services/auth.service';
+import { Created } from '@/responses/Created.response';
+import { CreateShopDto, LoginShopDto } from '@/dtos/shop.dto';
+import { OK } from '@/responses/Ok.response';
+import { RequestAttribute } from '@/interfaces/request.interface';
+import { SuccessResponse } from '@/responses/success.response';
 
 class AuthController {
   public authService = new AuthService();
 
   public signUp = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userData: CreateUserDto = req.body;
-      const signUpUserData: User = await this.authService.signup(userData);
-
-      res.status(201).json({ data: signUpUserData, message: 'signup' });
+      const createShopDto: CreateShopDto = req.body;
+      new Created({
+        message: "Registered OK!",
+        metadata: await this.authService.signUp(createShopDto)
+      }).send(res);
     } catch (error) {
       next(error);
     }
-  };
+  }
 
-  public logIn = async (req: Request, res: Response, next: NextFunction) => {
+  public login = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userData: CreateUserDto = req.body;
-      const { cookie, findUser } = await this.authService.login(userData);
-
-      res.setHeader('Set-Cookie', [cookie]);
-      res.status(200).json({ data: findUser, message: 'login' });
+      const loginShopDto: LoginShopDto = req.body;
+      new OK({
+        message: "Login success",
+        metadata: await this.authService.login(loginShopDto)
+      }).send(res)
     } catch (error) {
       next(error);
     }
-  };
+  }
 
-  public logOut = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+  public logout = async (req: RequestAttribute, res: Response, next: NextFunction) => {
     try {
-      const userData: User = req.user;
-      const logOutUserData: User = await this.authService.logout(userData);
-
-      res.setHeader('Set-Cookie', ['Authorization=; Max-age=0']);
-      res.status(200).json({ data: logOutUserData, message: 'logout' });
+      new OK({
+        message: "logout success",
+        metadata: await this.authService.logout(req.keyStore)
+      }).send(res);
     } catch (error) {
       next(error);
     }
-  };
+  }
+
+  public handleRefreshToken = async (req: RequestAttribute, res: Response, next: NextFunction) => {
+    try {
+      new SuccessResponse({
+        message: "Get Tokens success",
+        metadata: await this.authService.handleRefreshToken({
+          refreshToken: req.refreshToken,
+          shop: req.shop,
+          keyStore: req.keyStore
+        })
+      }).send(res);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default AuthController;

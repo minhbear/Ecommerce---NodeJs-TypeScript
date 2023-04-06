@@ -1,6 +1,5 @@
-import { ApiKeyInvalidException } from "@/exceptions/ApiKeyInvalid.exception";
+import { ForBiddenException } from "@/exceptions/ForbiddenError.exception";
 import { HttpException } from "@/exceptions/HttpException";
-import { PermissionInvalidException } from "@/exceptions/PermissionInvalid.exception";
 import { LeanApiKeyDocument } from "@/interfaces/apikey.interface";
 import { RequestAttribute } from "@/interfaces/request.interface";
 import { findById } from "@/services/apiKey.service";
@@ -21,32 +20,37 @@ const returnException = (res: Response, exception: HttpException) => {
 
 const apiKey = () => {
     return async (req: RequestAttribute, res: Response, next: NextFunction) => {
-        const key = req.headers[HEADER.API_KEY]?.toString();
-        if (!key) {
-            const exception = new ApiKeyInvalidException();
+        try{
+            const key = req.headers[HEADER.API_KEY]?.toString();
+            if (!key) {
+                const exception = new ForBiddenException();
+                returnException(res, exception);
+            }
+    
+            const objKey: LeanApiKeyDocument = await findById(key);
+            if (!objKey) {
+                const exception = new ForBiddenException();
+                returnException(res, exception);
+            }
+    
+            req.objKey = objKey;
+            return next();
+        }catch(error) {
+            const exception = new ForBiddenException();
             returnException(res, exception);
         }
-
-        const objKey: LeanApiKeyDocument = await findById(key);
-        if (!objKey) {
-            const exception = new ApiKeyInvalidException();
-            returnException(res, exception);
-        }
-
-        req.objKey = objKey;
-        return next();
     }
 }
 
 const permission = (permission: string) => {
     return async (req: RequestAttribute, res: Response, next: NextFunction) => {
         if (!req.objKey.permission) {
-            const exception = new PermissionInvalidException();
+            const exception = new ForBiddenException();
             returnException(res, exception);
         }
-        const validPermission: Boolean = req.objKey.permission.includes(permission);
+        const validPermission: boolean = req.objKey.permission.includes(permission);
         if(!validPermission) {
-            const exception = new PermissionInvalidException();
+            const exception = new ForBiddenException();
             returnException(res, exception);
         }
 

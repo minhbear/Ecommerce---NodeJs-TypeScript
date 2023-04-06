@@ -1,32 +1,50 @@
-import { NextFunction, Response } from 'express';
-import { verify } from 'jsonwebtoken';
-import { SECRET_KEY } from '@config';
-import { HttpException } from '@exceptions/HttpException';
-import { DataStoredInToken, RequestWithUser } from '@interfaces/auth.interface';
-import userModel from '@models/users.model';
+import { HEADER } from "@/common/enum/req-header";
+import { AuthFailureErrorException } from "@/exceptions/AuthFailureError.exception";
+import { NotFoundErrorException } from "@/exceptions/NotFoundError.exception";
+import { LeanKeyTokenDocument } from "@/interfaces/keyToken.interface";
+import { RequestAttribute } from "@/interfaces/request.interface";
+import KeyTokenRepo from "@/repositories/keyToken.repo";
+import { extractAccessToken, extractRefreshToken } from "@/utils/util";
+import { NextFunction, Response } from "express";
 
-const authMiddleware = async (req: RequestWithUser, res: Response, next: NextFunction) => {
-  try {
-    const Authorization = req.cookies['Authorization'] || (req.header('Authorization') ? req.header('Authorization').split('Bearer ')[1] : null);
-
-    if (Authorization) {
-      const secretKey: string = SECRET_KEY;
-      const verificationResponse = (await verify(Authorization, secretKey)) as DataStoredInToken;
-      const userId = verificationResponse._id;
-      const findUser = await userModel.findById(userId);
-
-      if (findUser) {
-        req.user = findUser;
-        next();
-      } else {
-        next(new HttpException(401, 'Wrong authentication token'));
-      }
-    } else {
-      next(new HttpException(404, 'Authentication token missing'));
+export const authentication = async (req: RequestAttribute, res: Response, next: NextFunction) => {
+    const shopId: string = req.headers[HEADER.CLIENT_ID] as string;
+    if(!shopId) {
+        throw new AuthFailureErrorException({ message: "Invalid Request" });
     }
-  } catch (error) {
-    next(new HttpException(401, 'Wrong authentication token'));
-  }
-};
 
-export default authMiddleware;
+    const keyStore: LeanKeyTokenDocument = await KeyTokenRepo.findByShopId(shopId);
+    if(!keyStore) {
+        throw new NotFoundErrorException({message: 'Not found key store'});
+    }
+
+    if(req.headers[HEADER.REFRESH_TOKEN]) {
+        try {
+            const refreshToken: string = req.headers[HEADER.REFRESH_TOKEN] as string;
+            const { decodedShop } = extractRefreshToken(refreshToken, keyStore, shopId);
+
+            req.keyStore = keyStore;
+            req.shop = decodedShop;
+            req.refreshToken = refreshToken;
+
+            return next();
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    const accessToken: string = req.headers[HEADER.AUTHORIZATION];
+    if(!accessToken) {
+        throw new AuthFailureErrorException({ message: "Invalid Request" });
+    }
+
+    try {
+        const { decodedShop } = extractAccessToken(accessToken, keyStore, shopId);
+        req.keyStore = keyStore;
+        req.shop = decodedShop;
+
+        return next();
+    } catch (error) {
+        throw error;
+    }
+}
