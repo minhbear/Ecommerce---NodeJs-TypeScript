@@ -101,9 +101,9 @@ class App {
     this.app.use((req: Request, res: Response, next: NextFunction) => {
       const path: string = req.path.toString();
 
-      const _error: HttpException = new HttpException(StatusCode.NOT_FOUND, `Not found path ${path}`)
+      const error: HttpException = new HttpException(StatusCode.NOT_FOUND, `Not found path ${path}`)
 
-      next(_error);
+      next(error);
     })
   }
 
