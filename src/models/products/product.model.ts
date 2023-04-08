@@ -1,4 +1,4 @@
-import { ProducType } from "@/common/enum/product.type";
+import { ProductType } from "@/common/enum/product.type";
 import { Product } from "@/interfaces/product.interface";
 import { Document, Schema, model } from "mongoose";
 import slugify from "slugify";
@@ -28,7 +28,7 @@ const productSchema = new Schema({
     product_type: {
         type: String,
         required: true,
-        enum: [ProducType.ELECTRONIC, ProducType.CLOTHING, ProducType.FURNITURE],
+        enum: [ProductType.ELECTRONIC, ProductType.CLOTHING, ProductType.FURNITURE],
     },
     product_shop: {
         type: Schema.Types.ObjectId, ref: "Shop"

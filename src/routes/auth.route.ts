@@ -7,7 +7,7 @@ import { authentication } from '@/middlewares/auth.middleware';
 import asyncHandler from '@/helpers/asyncHandle';
 
 class AuthRoute implements Routes {
-  public path = '/shop/';
+  public path = '/v1/api/shop/';
   public router = Router();
   public authController = new AuthController();
 

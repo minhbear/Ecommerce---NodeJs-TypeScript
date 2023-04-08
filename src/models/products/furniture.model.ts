@@ -1,7 +1,7 @@
 import { Furniture } from "@/interfaces/furniture.interface";
 import { Document, Schema, model } from "mongoose";
 
-const DOCUMENT_NAME = "Electronic";
+const DOCUMENT_NAME = "Furniture";
 const COLLECTION_NAME = "Furnitures";
 
 const furnitureSchema = new Schema({
