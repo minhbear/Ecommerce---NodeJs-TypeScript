@@ -1,8 +1,10 @@
-import { ProductDraftQuery, ProductPublishedQuery, ProductQuery } from "@/common/type/productQuery";
+import { ProductsSort } from "@/common/enum/products.sort";
+import { ProductDraftQuery, ProductPublishedQuery, ProductQuery, ProductsFilter } from "@/common/type/productQuery";
 import { ForBiddenException } from "@/exceptions/ForbiddenError.exception";
 import { LeanProductDocument, Product } from "@/interfaces/product.interface";
 import productModel from "@/models/products/product.model";
-import { Document } from "mongoose";
+import { getDataSelect, getDataUnselect } from "@/utils/util";
+import { SortOrder } from "mongoose";
 
 export default class ProductRepo{
     static async createProduct(createProduct: Partial<Product>, id: string): Promise<LeanProductDocument> {
@@ -55,5 +57,48 @@ export default class ProductRepo{
 
         const { modifiedCount } = await foundProduct.updateOne(foundProduct);
         return modifiedCount;
+    }
+
+    static async searchProductByUser({ keySearch }: { keySearch: string }): Promise<LeanProductDocument[]> {
+        console.log(keySearch);
+        const regexSearch: string = new RegExp(keySearch).toString();
+        console.log(regexSearch);
+
+        const result = await productModel.find(
+            {
+                isPublished: true,
+                $text: { $search: regexSearch }
+            },
+            {
+                score: { $meta: "textScore" }
+            }
+        )
+        .sort({ score: { $meta: "textScore" } })
+        .lean()
+        .exec()
+
+        return result;
+    }
+
+    static async findAllProduct({ limit, page, sort, select, filter }: {
+        limit: number,
+        page: number,
+        sort: ProductsSort,
+        select: string[],
+        filter: ProductsFilter
+    }): Promise<LeanProductDocument[]> {
+        const skip: number = (page - 1) * limit;
+        const sortBy: { [key: string]: SortOrder } = sort === ProductsSort.C_TIME ? { _id: -1 } : { _id: 1 };
+        return await productModel.find(filter)
+            .sort(sortBy)
+            .skip(skip)
+            .limit(limit)
+            .select(getDataSelect(select))
+            .lean()
+            .exec();
+    }
+
+    static async findProduct({ product_id, unSelect }: {product_id: string, unSelect: string[]}): Promise<LeanProductDocument> {
+        return await productModel.findById(product_id).select(getDataUnselect(unSelect));
     }
 }

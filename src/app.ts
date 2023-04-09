@@ -10,20 +10,20 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { NODE_ENV, PORT, LOG_FORMAT, ORIGIN, CREDENTIALS } from '@config';
 import { instanceMongoDb } from '@databases/init.mongodb';
-import { Routes } from '@interfaces/routes.interface';
 import errorMiddleware from '@middlewares/error.middleware';
 import { logger, stream } from '@utils/logger';
 import { StatusCode } from '@utils/httpStatusCode';
 import { apiKey, permission } from './auth/checkAuth';
 import { HttpException } from './exceptions/HttpException';
 import {PermissionType} from "@/common/enum/permission";
+import indexRoute from "@routes/index.route";
 
 class App {
   public app: express.Application;
   public env: string;
   public port: string | number;
 
-  constructor(routes: Routes[]) {
+  constructor() {
     this.app = express();
     this.env = NODE_ENV || 'development';
     this.port = PORT || 3000;
@@ -31,7 +31,7 @@ class App {
     this.connectToDatabase();
     this.initializeMiddlewares();
     this.initializeAccessPermission();
-    this.initializeRoutes(routes);
+    this.initializeRoutes();
     this.initializeSwagger();
     this.handleNotFoundRoute();
     this.initializeErrorHandling();
@@ -74,11 +74,8 @@ class App {
     this.app.use(permission(PermissionType.FULL_ACCESS));
   }
 
-  private initializeRoutes(routes: Routes[]) {
-    routes.forEach(route => {
-      this.app.use(route.router);
-      console.log(route.path);
-    });
+  private initializeRoutes() {
+    this.app.use(indexRoute);
   }
 
   private initializeSwagger() {

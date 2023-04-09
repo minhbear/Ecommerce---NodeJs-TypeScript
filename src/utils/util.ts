@@ -78,3 +78,11 @@ export const createTokenPair = (payload: JwtPayload, publicKey: string, privateK
 export const getInfoData = ({ fields = [], object = {} }) => {
   return lodash.pick(object, fields);
 }
+
+export const getDataSelect = (select: string[]) => {
+  return Object.fromEntries(select.map(el => [el, 1]));
+}
+
+export const getDataUnselect = (select: string[]) => {
+  return Object.fromEntries(select.map(el => [el, 0]));
+}

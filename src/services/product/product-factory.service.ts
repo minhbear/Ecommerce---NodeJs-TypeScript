@@ -1,4 +1,4 @@
-import { ProductType } from "@/common/enum/product.type";
+import { ProductType, ProductsSelectField } from "@/common/enum/product.type";
 import ClothingProduct from "./clothing.product";
 import { ElectronicProduct } from "./electronic.product";
 import { FurnitureProduct } from "./furniture.product";
@@ -6,7 +6,9 @@ import { BadRequestErrorException } from "@/exceptions/BadRequestError.exception
 import { CreateProductDto } from "@/dtos/product.dto";
 import { LeanProductDocument } from "@/interfaces/product.interface";
 import ProductRepo from "@/repositories/product.repo";
-import { ProductDraftQuery, ProductPublishedQuery } from "@/common/type/productQuery";
+import { ProductDraftQuery, ProductPublishedQuery, ProductsFilter } from "@/common/type/productQuery";
+import { ProductsSort } from "@/common/enum/products.sort";
+import { FilterProductsDto } from "@/dtos/product-filter.dto";
 
 export default class ProductFactoryService {
     static productRegistry = {};
@@ -66,8 +68,48 @@ export default class ProductFactoryService {
         return await ProductRepo.pulishProductByShop({ product_shop, product_id });
     }
 
+    /**
+    * @desc  UnPublish from product draft
+    * @param {string} product_shop
+    * @param {string} product_id
+    * @returns {number | null}
+    */
     static async unpublishProductShop({ product_shop, product_id }: { product_shop: string, product_id: string }): Promise<number> {
         return await ProductRepo.unpublishProductByShop({ product_shop, product_id });
+    }
+
+    /**
+     * find list of product with keyword keySearch
+     * @param {string} keySearch 
+     * @returns {LeanProductDocument}
+     */
+    static async searchProductByUser({ keySearch }: { keySearch: string }): Promise<LeanProductDocument[]> {
+        return await ProductRepo.searchProductByUser({ keySearch });
+    }
+
+
+    /**
+     * This function finds all products based on specified parameters and returns a promise of an array
+     * of lean product documents.
+     * @param {number} limit: number products need take
+     * @param {number} page
+     * @param {ProductsSort} sort: type of sort list product
+     * @param {ProductsSelectField[]} select: the field that need to take of one product
+     * @param {ProductsFilter} filter: the condtition to take product
+     * @returns {LeanProductDocument}
+     */
+    static async findAllProducts(
+        {
+            limit = 50, page = 1,
+            sort = ProductsSort.C_TIME,
+            select = [ProductsSelectField.PRODUCT_NAME, ProductsSelectField.PRODUCT_PRIZE, ProductsSelectField.PRODUCT_THUMB],
+            filter = { isPublished: true }
+        }: FilterProductsDto): Promise<LeanProductDocument[]> {
+        return await ProductRepo.findAllProduct({ limit, page, sort, select, filter });
+    }
+
+    static async findProduct({ product_id }: { product_id: string }) {
+        return await ProductRepo.findProduct({ product_id, unSelect: ['__v'] });
     }
 }
 

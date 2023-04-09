@@ -60,4 +60,6 @@ class AuthController {
   }
 }
 
-export default AuthController;
+const authController = new AuthController();
+
+export default authController;

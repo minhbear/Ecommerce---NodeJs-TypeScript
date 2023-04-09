@@ -10,6 +10,7 @@ const validationMiddleware = (
   whitelist = true,
   forbidNonWhitelisted = true,
 ): RequestHandler => {
+
   return (req, res, next) => {
     validate(plainToClass(type, req[value]), { skipMissingProperties, whitelist, forbidNonWhitelisted }).then((errors: ValidationError[]) => {
       if (errors.length > 0) {

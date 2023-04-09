@@ -1,4 +1,6 @@
+import { BaseFilterDto } from "@/common/base-filter.dto";
 import { ProductType } from "@/common/enum/product.type";
+import { Product } from "@/interfaces/product.interface";
 import { IsEnum, IsNotEmpty, IsNumber, IsObject, IsString } from "class-validator";
 
 export class CreateProductDto{
@@ -32,3 +34,6 @@ export class CreateProductDto{
     @IsNotEmpty()
     product_attributes: any;
 }
+
+
+

@@ -1,8 +1,8 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "target": "ES6",
-    "lib": ["ES6", "esnext.asynciterable"],
+    "target": "ES5",
+    "lib": ["ES5", "esnext.asynciterable"],
     "typeRoots": ["node_modules/@types"],
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,

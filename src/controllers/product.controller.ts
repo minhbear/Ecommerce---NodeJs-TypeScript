@@ -1,3 +1,4 @@
+import { FilterProductsDto, ProductSelectQuery } from "@/dtos/product-filter.dto";
 import { CreateProductDto } from "@/dtos/product.dto";
 import { RequestAttribute } from "@/interfaces/request.interface";
 import { SuccessResponse } from "@/responses/success.response";
@@ -46,6 +47,35 @@ class ProductController {
         })
         .send(res);
     }
+
+    searchProductByUser = async (req: RequestAttribute, res: Response, next: NextFunction) => {
+        new SuccessResponse({
+            message: "Get list of product with keyword successs",
+            metadata: await ProductFactoryService.searchProductByUser({ keySearch: req.params.keySearch as string })
+        })
+        .send(res);
+    }
+
+    getAllProductsForUser = async (req: RequestAttribute, res: Response, next: NextFunction) => {
+        const filterProductsDto: FilterProductsDto = req.query;
+        const productSelectQuery: ProductSelectQuery = req.body;
+        filterProductsDto.select = productSelectQuery.select;
+        new SuccessResponse({
+            message: "Get list of product for uses successs",
+            metadata: await ProductFactoryService.findAllProducts(filterProductsDto)
+        })
+        .send(res);
+    }
+
+    getProductDetailForUser = async (req: RequestAttribute, res: Response, next: NextFunction) => {
+        new SuccessResponse({
+            message: "Get product detail for uses successs",
+            metadata: await ProductFactoryService.findProduct({product_id: req.params.product_id})
+        })
+        .send(res);
+    }
 }
 
-export default ProductController;
+const productController = new ProductController();
+
+export default productController;

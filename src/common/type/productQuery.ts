@@ -9,3 +9,7 @@ export interface ProductDraftQuery extends ProductQuery {
 export interface ProductPublishedQuery extends ProductQuery {
     isPublished: boolean;
 }
+
+export interface ProductsFilter {
+    isPublished?: boolean;
+}

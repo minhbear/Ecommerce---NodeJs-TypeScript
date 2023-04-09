@@ -1,30 +1,25 @@
 import { Router } from 'express';
-import { Routes } from '@interfaces/routes.interface';
 import validationMiddleware from '@middlewares/validation.middleware';
 import { authentication } from '@/middlewares/auth.middleware';
 import asyncHandler from '@/helpers/asyncHandle';
-import ProductController from '@/controllers/product.controller';
+import productController from '@/controllers/product.controller';
 import { CreateProductDto } from '@/dtos/product.dto';
+import { FilterProductsDto, ProductSelectQuery } from '@/dtos/product-filter.dto';
 
-class ProductRoute implements Routes {
-  public path = '/v1/api/products/';
-  public router = Router();
-  public productController = new ProductController();
 
-  constructor() {
-    this.initializeRoutes();
-  }
+const router = Router();
 
-  private initializeRoutes() {
-    this.router.use( asyncHandler(authentication) );
-    
-    this.router.post(`${this.path}`, validationMiddleware(CreateProductDto, 'body'), this.productController.createProduct);
-    this.router.post(`${this.path}publish/:id`, this.productController.publishProductByShop);  
-    this.router.post(`${this.path}unpublish/:id`, this.productController.unPublishProductByShop);    
+router.get(`/search/:keySearch`, productController.searchProductByUser)
+router.get(`/`, validationMiddleware(FilterProductsDto, 'query'), validationMiddleware(ProductSelectQuery, 'body'), productController.getAllProductsForUser);
+router.get(`/:product_id`,  productController.getProductDetailForUser);
 
-    this.router.get(`${this.path}drafts/all`, this.productController.getAllDraftForShop);
-    this.router.get(`${this.path}published/all`, this.productController.getAllPublishedForShop);
-  }
-}
+router.use(asyncHandler(authentication));
 
-export default ProductRoute;
+router.post(`/`, validationMiddleware(CreateProductDto, 'body'), productController.createProduct);
+router.post(`/publish/:id`, productController.publishProductByShop);
+router.post(`/unpublish/:id`, productController.unPublishProductByShop);
+
+router.get(`/drafts/all`, productController.getAllDraftForShop);
+router.get(`/published/all`, productController.getAllPublishedForShop);
+
+module.exports = router;
