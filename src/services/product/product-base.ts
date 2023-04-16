@@ -1,6 +1,7 @@
 import { ProductType } from "@/common/enum/product.type";
 import { CreateProductDto } from "@/dtos/product.dto";
 import { LeanProductDocument } from "@/interfaces/product.interface";
+import { InventoryRepo } from "@/repositories/inventory.repo";
 import ProductRepo from "@/repositories/product.repo";
 
 export default class ProductBase {
@@ -35,7 +36,12 @@ export default class ProductBase {
     }
 
     async createProduct(product_id: string): Promise<LeanProductDocument> {
-        return await ProductRepo.createProduct(this, product_id);
+        const newProduct: LeanProductDocument = await ProductRepo.createProduct(this, product_id);
+    
+        // add stock of product to inventory
+        await InventoryRepo.insertInventory({ productId: newProduct._id, shopId: this.product_shop, stock: this.product_quantity })
+
+        return newProduct
     }
 
     async updateProduct(product_id: string, productUpdate: any){
