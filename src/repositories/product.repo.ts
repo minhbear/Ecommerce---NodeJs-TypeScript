@@ -99,6 +99,10 @@ export default class ProductRepo{
     }
 
     static async findProduct({ product_id, unSelect }: {product_id: string, unSelect: string[]}): Promise<LeanProductDocument> {
-        return await productModel.findById(product_id).select(getDataUnselect(unSelect));
+        return await productModel.findById(product_id).select(getDataUnselect(unSelect)).exec();
+    }
+
+    static async updateProduct({ product_id, productUpdate }: { product_id: string, productUpdate: any }): Promise<LeanProductDocument> {
+        return await productModel.findByIdAndUpdate(product_id, productUpdate, { new: true}).exec();
     }
 }

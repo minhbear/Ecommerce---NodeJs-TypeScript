@@ -18,6 +18,16 @@ class ProductController {
         }).send(res);
     }
 
+    updateProduct = async (req: RequestAttribute, res: Response, next: NextFunction) => {
+        new SuccessResponse({
+            message: "Update Product success",
+            metadata: await ProductFactoryService.updateProduct(req.body.product_type, {
+                ...req.body,
+                product_shop: req.shop.id
+            }, req.params.product_id)
+        }).send(res);
+    }
+
     publishProductByShop = async (req: RequestAttribute, res: Response, next: NextFunction) => {
         new SuccessResponse({
             message: "Published product success",

@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import lodash from "lodash";
+import lodash, { update } from "lodash";
 import { verify, sign } from "jsonwebtoken";
 import { AuthFailureErrorException } from "@exceptions/AuthFailureError.exception";
 import { LeanKeyTokenDocument } from "@/interfaces/keyToken.interface";
@@ -85,4 +85,30 @@ export const getDataSelect = (select: string[]) => {
 
 export const getDataUnselect = (select: string[]) => {
   return Object.fromEntries(select.map(el => [el, 0]));
+}
+
+export const removeUndefinedObject = (obj: any) => {
+  Object.keys(obj).forEach(key => {
+    if(obj[key] === undefined){
+      delete obj[key];
+    }
+  });
+
+  return obj;
+}
+
+export const updateNestedObject = (obj: any): any => {
+  const final = {};
+  Object.keys(obj).forEach(key => {
+    if(typeof obj[key] === "object" && !Array.isArray(obj[key])){
+      const response = updateNestedObject(obj[key]);
+      Object.keys(response).forEach(k => {
+        final[`${key}.${k}`] = response[k];
+      })
+    }else{
+      final[key] = obj[key];
+    }
+  });
+
+  return final;
 }

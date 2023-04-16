@@ -33,6 +33,22 @@ export default class ProductFactoryService {
     }
 
     /**
+     * @desc Update product 
+     * @param {ProductType} type 
+     * @param {any} payload 
+     * @param {string} product_id 
+     * @returns {LeanProductDocument}
+     */
+    static async updateProduct(type: ProductType, payload: any, product_id: string): Promise<LeanProductDocument> {
+        const productClass = ProductFactoryService.productRegistry[type];
+        if(!productClass) {
+            throw new BadRequestErrorException({ message: `Invalid product type: ${type}` });
+        }
+
+        return new productClass(payload).updateProduct(product_id);
+    }
+
+    /**
     * @desc Get all Drafts product for shop
     * @param {string} product_shop
     * @param {number} limit

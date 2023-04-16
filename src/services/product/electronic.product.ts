@@ -3,6 +3,7 @@ import { LeanProductDocument } from "@/interfaces/product.interface";
 import ElectronicRepo from "@/repositories/electronic.repo";
 import ProductBase from "./product-base";
 import { BadRequestErrorException } from "@/exceptions/BadRequestError.exception";
+import { removeUndefinedObject, updateNestedObject } from "@/utils/util";
 
 export class ElectronicProduct extends ProductBase{
     async createProduct(): Promise<LeanProductDocument> {
@@ -17,5 +18,19 @@ export class ElectronicProduct extends ProductBase{
         }
 
         return newProduct;
+    }
+
+    async updateProduct(product_id: string): Promise<LeanProductDocument>{
+        const objParam: this = removeUndefinedObject(this);
+        if(objParam.product_attributes) {
+            await ElectronicRepo.updateProductElectronic({ 
+                product_id,
+                productUpdate: updateNestedObject(objParam.product_attributes)
+             })
+        }
+
+        const updateProduct: LeanProductDocument = await super.updateProduct(product_id, updateNestedObject(objParam));
+
+        return updateProduct;
     }
 }   

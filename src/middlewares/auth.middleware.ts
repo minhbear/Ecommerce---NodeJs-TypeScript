@@ -8,7 +8,6 @@ import { extractAccessToken, extractRefreshToken } from "@/utils/util";
 import { NextFunction, Response } from "express";
 
 export const authentication = async (req: RequestAttribute, res: Response, next: NextFunction) => {
-    console.log("go in here");
     const shopId: string = req.headers[HEADER.CLIENT_ID] as string;
     if(!shopId) {
         throw new AuthFailureErrorException({ message: "Invalid Request" });

@@ -3,6 +3,7 @@ import ProductBase from "./product-base";
 import ClothingRepo from "@/repositories/clothing.repo";
 import { LeanClothingDocument } from "@/interfaces/clothing.interface";
 import { BadRequestErrorException } from "@/exceptions/BadRequestError.exception";
+import { removeUndefinedObject, updateNestedObject } from "@/utils/util";
 
 export default class ClothingProduct extends ProductBase{
     
@@ -19,5 +20,19 @@ export default class ClothingProduct extends ProductBase{
         }
 
         return newProduct;
+    }
+
+    async updateProduct(product_id: string): Promise<LeanProductDocument>{
+        const objParam: this = removeUndefinedObject(this);
+        if(objParam.product_attributes) {
+            await ClothingRepo.updateProductClothing({ 
+                product_id,
+                productUpdate: updateNestedObject(objParam.product_attributes)
+             })
+        }
+
+        const updateProduct: LeanProductDocument = await super.updateProduct(product_id, updateNestedObject(objParam));
+
+        return updateProduct;
     }
 }

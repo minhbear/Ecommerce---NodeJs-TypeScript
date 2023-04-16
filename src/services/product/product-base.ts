@@ -38,4 +38,7 @@ export default class ProductBase {
         return await ProductRepo.createProduct(this, product_id);
     }
 
+    async updateProduct(product_id: string, productUpdate: any){
+        return await ProductRepo.updateProduct({ product_id, productUpdate });
+    }
 }
