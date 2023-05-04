@@ -1,6 +1,5 @@
 import { ProductsSort } from "@/common/enum/products.sort";
 import { ProductDraftQuery, ProductPublishedQuery, ProductQuery, ProductsFilter } from "@/common/type/productQuery";
-import { ForBiddenException } from "@/exceptions/ForbiddenError.exception";
 import { LeanProductDocument, Product } from "@/interfaces/product.interface";
 import productModel from "@/models/products/product.model";
 import { getDataSelect, getDataUnselect } from "@/utils/util";

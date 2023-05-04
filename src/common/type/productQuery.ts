@@ -12,4 +12,6 @@ export interface ProductPublishedQuery extends ProductQuery {
 
 export interface ProductsFilter {
     isPublished?: boolean;
+    product_shop?: string;
+    _id?: string | {}
 }

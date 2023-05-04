@@ -4,6 +4,7 @@ import { verify, sign } from "jsonwebtoken";
 import { AuthFailureErrorException } from "@exceptions/AuthFailureError.exception";
 import { LeanKeyTokenDocument } from "@/interfaces/keyToken.interface";
 import { JwtPayload } from "@/common/type/JwtPayload";
+import { Types } from "mongoose";
 
 /**
  * @method isEmpty
@@ -111,4 +112,8 @@ export const updateNestedObject = (obj: any): any => {
   });
 
   return final;
+}
+
+export const convertToObjectIDMongoose = (id: string) => {
+  return new Types.ObjectId(id);
 }
