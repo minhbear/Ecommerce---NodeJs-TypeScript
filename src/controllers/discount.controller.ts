@@ -1,4 +1,4 @@
-import { CreateDiscountCodeDto, FilterDiscountByShop, FilterDiscountDto, UpdateDiscountCodeDto } from "@/dtos/discount.dto";
+import { CreateDiscountCodeDto, FilterDiscountByShop, FilterDiscountDto, GetAmountApplyDiscount, UpdateDiscountCodeDto } from "@/dtos/discount.dto";
 import { RequestAttribute } from "@/interfaces/request.interface";
 import { SuccessResponse } from "@/responses/success.response";
 import { DiscountService } from "@/services/discount/discount.service";
@@ -64,6 +64,21 @@ class DiscountController {
             new SuccessResponse({
                 message: "get discount code with product success",
                 metadata: await this.discountService.getAllDiscountByShop(dto)
+            }).send(res);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    getAmountApplyDiscount = async (req: RequestAttribute, res: Response, next: NextFunction) => {
+        try {
+            const dto: GetAmountApplyDiscount = {
+                ...req.body,
+            }
+
+            new SuccessResponse({
+                message: "get amount apply discount success",
+                metadata: await this.discountService.getDiscountAmount(dto)
             }).send(res);
         } catch (error) {
             next(error);

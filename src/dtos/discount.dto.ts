@@ -1,5 +1,6 @@
 import { DisccountApply, DiscountType } from "@/common/enum/discount-type";
-import { IsArray, IsBoolean, IsDateString, IsEnum, IsNumber, IsOptional, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import { IsArray, IsBoolean, IsDateString, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
 
 export class CreateDiscountCodeDto {
     @IsString()
@@ -124,4 +125,29 @@ export class FilterDiscountByShop {
     page?: number;
 
     shopId: string;
+}
+
+export class GetAmountApplyDiscount {
+    @IsString()
+    codeId: string;
+
+    @IsString()
+    userId: string;
+
+    @IsString()
+    shopId: string;
+
+    @IsArray()
+    products: ProductApplyDiscount[]
+}
+
+class ProductApplyDiscount {
+    @IsString()
+    productId: string;
+
+    @IsNumber()
+    quantity: number;
+
+    @IsNumber()
+    price: number;
 }

@@ -1,4 +1,4 @@
-import { CreateDiscountCodeDto, UpdateDiscountCodeDto } from "@/dtos/discount.dto";
+import { CreateDiscountCodeDto, GetAmountApplyDiscount, UpdateDiscountCodeDto } from "@/dtos/discount.dto";
 import { BadRequestErrorException } from "@/exceptions/BadRequestError.exception";
 import discountModel from "@/models/discount.model";
 import { DiscountBuilder } from "./discount-builder";
@@ -6,7 +6,7 @@ import { Discount } from "@/interfaces/discount.interface";
 import { NotFoundErrorException } from "@/exceptions/NotFoundError.exception";
 import DiscountRepo from "@/repositories/discount.repo";
 import { convertToObjectIDMongoose, removeUndefinedObject } from "@/utils/util";
-import { DisccountApply } from "@/common/enum/discount-type";
+import { DisccountApply, DiscountType } from "@/common/enum/discount-type";
 import ProductRepo from "@/repositories/product.repo";
 import { ProductsSort } from "@/common/enum/products.sort";
 import { LeanProductDocument } from "@/interfaces/product.interface";
@@ -168,4 +168,88 @@ export class DiscountService {
         return discounts;
     }
     
+    async getDiscountAmount({ codeId, userId, shopId, products }: GetAmountApplyDiscount) {
+        const foundDiscount = await DiscountRepo.findDiscountByShopAndCode(codeId, shopId);
+
+        if(!foundDiscount) {
+            throw new NotFoundErrorException({ message: "Not found discount code" });
+        }
+
+        const {
+            discount_is_active,
+            discount_max_uses,
+            discount_start_date,
+            discount_end_date,
+            discount_min_order_value,
+            discount_type,
+            discount_value
+        } = foundDiscount;
+
+        if(!discount_is_active) {
+            throw new BadRequestErrorException({ message: "Discount expired" });
+        }
+
+        if(discount_max_uses === 0) {
+            throw new NotFoundErrorException({ message: "Discount are out" });
+        }
+
+        if(new Date() < new Date(discount_start_date) || new Date() > new Date(discount_end_date)) {
+            throw new BadRequestErrorException({ message: "Discount expired" });
+        }
+
+        console.log(products.reduce((acc, product) => {
+            console.log(product)
+            return acc + product.price * product.quantity
+        }, 0));
+
+        let totalOrder = 0;
+        if(discount_min_order_value >= 0) {
+            totalOrder = products.reduce((acc, product) => {
+                return acc + (product.price * product.quantity);
+            }, 0)
+
+            if(totalOrder < discount_min_order_value) {
+                throw new BadRequestErrorException({ message: `Discount requires a minimum order value of ${ discount_min_order_value }`});
+            }
+        }
+
+        const amount = discount_type === DiscountType.FIXED_AMOUNT ? discount_value : totalOrder * (discount_value / 100);
+
+        console.log(foundDiscount)
+
+        return {
+            totalOrder,
+            discount: amount,
+            totalPrice: totalOrder - amount
+        }
+    }
+
+    async deleteDiscountCode({ shopId, codeId }) {
+        const deleted = await discountModel.findOneAndDelete({
+            discount_code: codeId,
+            discount_shopId: shopId
+        }).exec();
+
+        return deleted;
+    }
+
+    async cancelDiscountCode({ codeId, shopId, userId }) {
+        const foundDiscount = await DiscountRepo.findDiscountByShopAndCode(codeId, shopId);
+
+        if(!foundDiscount) {
+            throw new NotFoundErrorException({ message: "Not found discount code" });
+        }
+
+        const result = await discountModel.findByIdAndUpdate(foundDiscount._id, {
+            $pull: {
+                discount_users_used: userId
+            },
+            $inc: {
+                discount_max_uses: 1,
+                discount_uses_count: -1
+            }
+        }).exec();
+
+        return result;
+    }
 }

@@ -2,7 +2,7 @@ import { ProductsSort } from "@/common/enum/products.sort";
 import { ProductDraftQuery, ProductPublishedQuery, ProductQuery, ProductsFilter } from "@/common/type/productQuery";
 import { LeanProductDocument, Product } from "@/interfaces/product.interface";
 import productModel from "@/models/products/product.model";
-import { getDataSelect, getDataUnselect } from "@/utils/util";
+import { convertToObjectIDMongoose, getDataSelect, getDataUnselect } from "@/utils/util";
 import { SortOrder } from "mongoose";
 
 export default class ProductRepo{
@@ -103,5 +103,9 @@ export default class ProductRepo{
 
     static async updateProduct({ product_id, productUpdate }: { product_id: string, productUpdate: any }): Promise<LeanProductDocument> {
         return await productModel.findByIdAndUpdate(product_id, productUpdate, { new: true}).exec();
+    }
+
+    static async getProductById(productId) {
+        return await productModel.findOne({ _id: convertToObjectIDMongoose(productId) }).lean().exec();
     }
 }

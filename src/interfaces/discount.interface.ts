@@ -12,7 +12,7 @@ export interface Discount {
     discount_max_uses: number,
     discount_uses_count: number,
     discount_max_value: number,
-    discount_users_used: string[],
+    discount_users_used: any[],
     discount_max_uses_per_user: number, // max discount can be use by user
     discount_min_order_value: number,
     discount_shopId: string | Types.ObjectId,

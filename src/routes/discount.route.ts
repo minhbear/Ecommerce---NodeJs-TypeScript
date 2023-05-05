@@ -3,10 +3,11 @@ import validationMiddleware from '@middlewares/validation.middleware';
 import { authentication } from '@/middlewares/auth.middleware';
 import asyncHandler from '@/helpers/asyncHandle';
 import discountController from "@/controllers/discount.controller";
-import { CreateDiscountCodeDto, FilterDiscountByShop, FilterDiscountDto, UpdateDiscountCodeDto } from "@/dtos/discount.dto";
+import { CreateDiscountCodeDto, FilterDiscountByShop, FilterDiscountDto, GetAmountApplyDiscount, UpdateDiscountCodeDto } from "@/dtos/discount.dto";
 
 const router = Router();
 
+router.post('/amount', validationMiddleware(GetAmountApplyDiscount, 'body'), discountController.getAmountApplyDiscount);
 router.get('/products', validationMiddleware(FilterDiscountDto, 'body'), discountController.getAllDiscountCodeWithProduct)
 router.get('/shop/:id', validationMiddleware(FilterDiscountByShop, 'body'), discountController.getAllDiscountCodeByShop)
 
